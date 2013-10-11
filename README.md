@@ -1,28 +1,27 @@
-organel | dna & defaults:
+# organic-httpserver
 
-* prefixConsoleWithTimestamps - `false`
+The organelle provides ondemand utilities supporting console logging (`console.log`)
 
-  instructs including modified version of [clim](http://github.com/epeli/node-clim.git) 
-  which will monkey-patch `console` object so that any further usage will include 
-  prefixed timestamp
+## DNA structure and defaults
 
-* attachHttpServerErrorMiddleware - `false`
+    {
+      "prefixConsoleWithTimestamps": false,
+      "timeStampMethods": ["log", "error"], /* optional */
+      "listenUncaughtExceptions": false,
+      "target": console /* optional */
+    }
 
-  instructs start listening for `HttpServer` Chemical containing `ExpressHttpServer data` 
-  instance for attaching middleware responsible to piping any found errors to `console.error`
-  method
+- `target`
+It is optional property. Defaults to `console` global object.
+If set it will be used as target of logger either
+by requiring given path as String or directly using it as Object.
 
-* listenUncaughtExceptions - `false`
+- `prefixConsoleWithTimestamps`
+Wraps methods on `target` using `timeStampMethods` property as source and prepends timestamp
+before calling original methods.
 
-  instructs to do `process.addListener("uncaughtException", ...)` , which will then pipe any 
-  errors to `console.error` method
+## Reacts to chemicals
 
-# incoming | HttpServer
+### type: "kill"
 
-does not aggrigates the chemical
-
-* data - ExpressHttpServer instance
-
-# incoming | Logger 
-
-does simple console.log( `chemical` )
+effective only when listening and logging uncaughtExceptions emitted on `process` object

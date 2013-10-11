@@ -1,36 +1,54 @@
-var util = require("util");
-var Organel = require("organic").Organel;
+var Organel = require("organic").Organel
 
-module.exports = function Logger(plasma, config){
+module.exports = Organel.extend( function(plasma, config){
   Organel.call(this, plasma);
 
-  if(config.prefixConsoleWithTimestamps)
-    require("./lib/clim")(console, true);
-
-  var logger = console;
   this.config = config;
 
-  if(config.attachHttpServerErrorMiddleware)
-    this.on("HttpServer", function(chemical){
-      if(chemical.data && chemical.data.app && chemical.data.app.use)
-        chemical.data.app.use(function(err, req, res, next){
-          logger.error(err.message, {stack: err.stack});
-        });
-      return false; // pass forward...
-    });
+  this.logger = console
+  if(config.target)
+    if(typeof config.target == "string")
+      this.logger = require(config.target)
+    else
+      this.logger = config.target
 
-  this.on("Logger", function(c, sender, callback){
-    logger.log(c);
-    if(callback) callback(c);
-  });
+  if(config.prefixConsoleWithTimestamps)
+    this.prefixWithTimestamps({target: this.logger, methods: config.timeStampMethods || ["log", "error"]})
 
-  if(config.listenUncaughtExceptions)
-    process.addListener("uncaughtException", function(err) {
-      if(err.stack)
-        logger.error(err.stack);
-      else
-        logger.error(err);
-    });
-}
-
-util.inherits(module.exports, Organel);
+  if(config.listenUncaughtExceptions) {
+    var self = this
+    this.uncaughtExceptionHandler = function(err){
+      self.logException(err)
+    }
+    process.addListener("uncaughtException", this.uncaughtExceptionHandler)
+    this.on("kill", function(){
+      process.removeListener("uncaughtException", this.uncaughtExceptionHandler)
+      return false
+    })
+  }
+}, {
+  logException: function(c) {
+    if(c.stack)
+      this.logger.error(c.stack);
+    else
+      this.logger.error(c);
+  },
+  prefixWithTimestamps: function(c) {
+    var self = this
+    c.methods.forEach(function(methodName){
+      c.target["original$"+methodName] = c.target[methodName]
+      c.target[methodName] = function(){
+        var args = [(new Date).toString(), methodName.toUpperCase()]
+        for(var i = 0; i<arguments.length; i++)
+          args.push(arguments[i])
+        c.target["original$"+methodName].apply(c.target, args);
+      }
+    })
+  },
+  unprefixWithTimestamps: function(c){
+    c.methods.forEach(function(methodName){
+      c.target[methodName] = c.target["original$"+methodName]
+      delete c.target["original$"+methodName]
+    })
+  }
+})
