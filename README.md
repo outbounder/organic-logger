@@ -1,4 +1,4 @@
-# organic-httpserver
+# organic-logger
 
 The organelle provides ondemand utilities supporting console logging (`console.log`)
 
