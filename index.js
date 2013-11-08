@@ -22,7 +22,9 @@ module.exports = Organel.extend( function(plasma, config){
     }
     process.addListener("uncaughtException", this.uncaughtExceptionHandler)
     this.on("kill", function(){
-      process.removeListener("uncaughtException", this.uncaughtExceptionHandler)
+      if(config.prefixWithTimestamps)
+        self.unprefixWithTimestamps({target: self.logger, methods: config.timeStampMethods || ["log", "error"]})
+      process.removeListener("uncaughtException", self.uncaughtExceptionHandler)
       return false
     })
   }
